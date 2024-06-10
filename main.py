@@ -75,7 +75,7 @@ async def playtime_command(
 
 @bot.event
 async def on_presence_update(before: discord.Member, after: discord.Member):
-    if not before.activity and not after.activity:
+    if (not before.activity and not after.activity) or before.bot:
         return
 
     elif not before.activity and after.activity:
