@@ -51,14 +51,9 @@ async def playtime_command(
 
     game_data = await GameData.get_or_none(name=game)
 
-    sorted_leaderboard = {k: v for k, v in sorted(game_data.users.items(), key=lambda item: item[1])}
-
     leaderboard = ""
-    for i, x in enumerate(sorted_leaderboard, start=1):
-        leaderboard += f"{i}. <@{x}> - {sorted_leaderboard[x] / 60:.2f} hrs\n"
-
-        if i > 10:
-            break
+    for i, x in enumerate(game_data.users, start=1):
+        leaderboard += f"{i}. <@{x}> - {game_data.users[x] / 60:.2f} hrs\n"
 
     embed = discord.Embed(color=discord.Color.embed_background(), title=game_data.name)
     embed.description = (
