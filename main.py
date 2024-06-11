@@ -18,7 +18,7 @@ from database import db_init
 
 
 async def game_search(ctx: discord.AutocompleteContext):  # AutoComplete for /emojis search, for better UX.
-    return [discord.OptionChoice(x.name) for x in await GameData.all() if ctx.value in x.name]
+    return [discord.OptionChoice(x.name) for x in await GameData.all() if ctx.value.lower() in x.name.lower()]
 
 
 intents = discord.Intents.all()
@@ -52,8 +52,8 @@ async def playtime_command(
     game_data = await GameData.get_or_none(name=game)
 
     leaderboard = ""
-    for i, x in enumerate(game_data.users, start=1):
-        leaderboard += f"{i}. <@{x}> - {game_data.users[x] / 60:.2f} hrs\n"
+    for i, x in enumerate(game_data.users):
+        leaderboard += f"{i+1}. <@{x}> - {game_data.users[x] / 60:.2f} hrs\n"
 
     embed = discord.Embed(color=discord.Color.embed_background(), title=game_data.name)
     embed.description = (
