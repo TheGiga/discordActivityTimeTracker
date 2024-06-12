@@ -40,7 +40,7 @@ class ActivityData:
 
 def activity_eligibility_check(activity) -> bool:
     if activity.name in config.BANNED_ACTIVITY_NAMES:
-        print(f'activity.name in banned names, {activity.name=}')
+        #print(f'activity.name in banned names, {activity.name=}')
         return False
 
     if hasattr(activity, "type"):
