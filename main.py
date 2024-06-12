@@ -45,7 +45,7 @@ def activity_eligibility_check(activity) -> bool:
 
     if hasattr(activity, "type"):
         if activity.type is not ActivityType.playing:
-            print(f'{activity.type=} not playing')
+            #print(f'{activity.type=} not playing')
             return False
 
     return True
@@ -71,7 +71,7 @@ def translate_activity_names_list_to_activity_list(name_list: list[str], activit
             if name == act.name:
                 to_return.append(act)
 
-    print(f"translated\n{name_list}\nto\n{to_return}")
+    #print(f"translated\n{name_list}\nto\n{to_return}")
     return to_return
 
 
@@ -91,7 +91,7 @@ def compare_activity_lists_by_names(x, y) -> (bool, set, set):
     y = set([act.name for act in y])
 
     if len(x.symmetric_difference(y)) < 1:
-        print("no difference:", x.symmetric_difference(y))
+        #print("no difference:", x.symmetric_difference(y))
         return True, set(), set()
 
     return False, x.difference(y), y.difference(x)
@@ -108,7 +108,7 @@ async def on_presence_update(before: discord.Member, after: discord.Member):
 
         if eligible_activities:
             tracking_list[after.id] = [ActivityData(x) for x in eligible_activities]
-            print(1, tracking_list)
+            #print(1, tracking_list)
 
     elif before.activity and not after.activity:
         stored_user_data = tracking_list.get(after.id)
@@ -119,7 +119,7 @@ async def on_presence_update(before: discord.Member, after: discord.Member):
         tracking_list.pop(after.id)
 
         for tracked_activity in stored_user_data:
-            print(2, tracked_activity)
+            #print(2, tracked_activity)
             await GameData.store_activity_data(after, tracked_activity)
 
     elif before.activity and after.activity:
@@ -137,7 +137,7 @@ async def on_presence_update(before: discord.Member, after: discord.Member):
 
         stored_user_data: list = tracking_list.get(after.id)
 
-        print(f'{to_remove=}, {to_add=}')
+        #print(f'{to_remove=}, {to_add=}')
 
         if not stored_user_data:
             if to_add:
@@ -156,14 +156,14 @@ async def on_presence_update(before: discord.Member, after: discord.Member):
                 stored_user_data.extend(
                     [
                         ActivityData(x) for x in translate_activity_names_list_to_activity_list(
-                        to_add, after_eligible_activities
-                    )
+                            to_add, after_eligible_activities
+                        )
                     ]
                 )
 
         tracking_list[after.id] = stored_user_data
 
-        print(f'user data after removal and addition: ', stored_user_data)
+        #print(f'user data after removal and addition: ', stored_user_data)
 
 
 @loop(minutes=10)

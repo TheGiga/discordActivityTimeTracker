@@ -33,7 +33,7 @@ class GameData(Model):
         if timedelta.seconds < 1:
             return
 
-        print("Storing ", game_name)
+        print(f"Storing {game_name} from {user.name}")
 
         record, _ = await cls.get_or_create(name=game_name)
 
