@@ -40,11 +40,11 @@ class GameData(Model):
         record.overall_time += round(timedelta.seconds / 60)
 
         all_users_data: dict = record.users.copy()
-        if not all_users_data.get(user.id):
-            all_users_data[user.id] = round(timedelta.seconds / 60)
+        if not all_users_data.get(str(user.id)):
+            all_users_data[str(user.id)] = round(timedelta.seconds / 60)
         else:
-            current_time = all_users_data[user.id]
-            all_users_data[user.id] = current_time + round(timedelta / 60)
+            current_time = all_users_data[str(user.id)]
+            all_users_data[str(user.id)] = current_time + round(timedelta / 60)
 
         record.users = all_users_data
 
