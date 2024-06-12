@@ -44,7 +44,7 @@ class GameData(Model):
             all_users_data[str(user.id)] = round(timedelta.seconds / 60)
         else:
             current_time = all_users_data[str(user.id)]
-            all_users_data[str(user.id)] = current_time + round(timedelta / 60)
+            all_users_data[str(user.id)] = current_time + round(timedelta.seconds / 60)
 
         record.users = all_users_data
 
