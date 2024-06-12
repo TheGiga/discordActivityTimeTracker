@@ -44,7 +44,7 @@ def activity_eligibility_check(activity) -> bool:
         return False
 
     if hasattr(activity, "type"):
-        if activity.type is not ActivityType.playing:
+        if activity.type in [ActivityType.playing, ActivityType.streaming]:
             #print(f'{activity.type=} not playing')
             return False
 
