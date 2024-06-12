@@ -4,3 +4,4 @@ venv/
 *.db
 bot.db-shm
 bot.db-wal
+.idea

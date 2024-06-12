@@ -1,19 +1,18 @@
 import datetime
 import os
 import asyncio
-import random
-
 import discord
+from discord import ActivityType
 from dotenv import load_dotenv
 from tortoise import connections
 from discord.ext.tasks import loop
 
-import config
-from models import GameData
-
 load_dotenv()
 
 # Any project imports should be used after the load of .env
+
+import config
+from models import GameData
 from database import db_init
 
 
@@ -24,7 +23,147 @@ async def game_search(ctx: discord.AutocompleteContext):  # AutoComplete for /em
 intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
-tracking_list = {}
+tracking_list: {int: list['ActivityData']} = {}
+
+
+class ActivityData:
+    def __init__(self, activity: discord.Activity):
+        self.name = activity.name
+        self.start = datetime.datetime.utcnow()
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return f"ActivityData({self.name=}, {self.start=})"
+
+
+def activity_eligibility_check(activity) -> bool:
+    if activity.name in config.BANNED_ACTIVITY_NAMES:
+        print(f'activity.name in banned names, {activity.name=}')
+        return False
+
+    if hasattr(activity, "type"):
+        if activity.type is not ActivityType.playing:
+            print(f'{activity.type=} not playing')
+            return False
+
+    return True
+
+
+def strip_ineligible_activities(activities: tuple) -> list:
+    to_return = []
+
+    for activity in activities:
+        if not activity_eligibility_check(activity):
+            continue
+
+        to_return.append(activity)
+
+    return to_return
+
+
+def translate_activity_names_list_to_activity_list(name_list: list[str], activities: list):
+    to_return = []
+
+    for name in name_list:
+        for act in activities:
+            if name == act.name:
+                to_return.append(act)
+
+    print(f"translated\n{name_list}\nto\n{to_return}")
+    return to_return
+
+
+def compare_activity_lists_by_names(x, y) -> (bool, set, set):
+    """
+    Returns:
+
+    - 1: True, if lists are identical by activity names;
+    - 2: set of activity names that are in 1st set, but not 2nd;
+    - 3: same as 2, but reverse
+    :param x:
+    :param y:
+    :return: bool, set, set
+    """
+
+    x = set([act.name for act in x])
+    y = set([act.name for act in y])
+
+    if len(x.symmetric_difference(y)) < 1:
+        print("no difference:", x.symmetric_difference(y))
+        return True, set(), set()
+
+    return False, x.difference(y), y.difference(x)
+
+
+@bot.event
+async def on_presence_update(before: discord.Member, after: discord.Member):
+    print("Presence Update, current tracking list: ", tracking_list)
+    if (not before.activity and not after.activity) or before.bot:
+        return
+
+    elif not before.activity and after.activity:
+        eligible_activities = strip_ineligible_activities(after.activities)
+
+        if eligible_activities:
+            tracking_list[after.id] = [ActivityData(x) for x in eligible_activities]
+            print(1, tracking_list)
+
+    elif before.activity and not after.activity:
+        stored_user_data = tracking_list.get(after.id)
+
+        if not stored_user_data:
+            return
+
+        tracking_list.pop(after.id)
+
+        for tracked_activity in stored_user_data:
+            print(2, tracked_activity)
+            await GameData.store_activity_data(after, tracked_activity)
+
+    elif before.activity and after.activity:
+        before_eligible_activities = strip_ineligible_activities(before.activities)
+        after_eligible_activities = strip_ineligible_activities(after.activities)
+
+        if len(before_eligible_activities) + len(after_eligible_activities) < 1:
+            return
+
+        are_same, to_remove, to_add = \
+            compare_activity_lists_by_names(before_eligible_activities, after_eligible_activities)
+
+        if are_same:
+            return
+
+        stored_user_data: list = tracking_list.get(after.id)
+
+        print(f'{to_remove=}, {to_add=}')
+
+        if not stored_user_data:
+            if to_add:
+                stored_user_data = [
+                    ActivityData(x) for x in translate_activity_names_list_to_activity_list(
+                        to_add, after_eligible_activities
+                    )
+                ]
+        else:
+            for value in stored_user_data:
+                if value.name in to_remove:
+                    stored_user_data.remove(value)
+                    await GameData.store_activity_data(after, value)
+
+            if to_add:
+                stored_user_data.extend(
+                    [
+                        ActivityData(x) for x in translate_activity_names_list_to_activity_list(
+                        to_add, after_eligible_activities
+                    )
+                    ]
+                )
+
+        tracking_list[after.id] = stored_user_data
+
+        print(f'user data after removal and addition: ', stored_user_data)
 
 
 @loop(minutes=10)
@@ -45,56 +184,50 @@ async def channel_name_loop():
 @bot.slash_command(name="playtime")
 async def playtime_command(
         ctx: discord.ApplicationContext,
-        game: discord.Option(description='Game to check playtime leaderboard in', autocomplete=game_search)
+        game: discord.Option(description='Game to check playtime leaderboard in', autocomplete=game_search),
+        user: discord.Option(discord.Member, required=False) = None
 ):
     await ctx.defer()
 
     game_data = await GameData.get_or_none(name=game)
 
-    leaderboard = ""
-    for i, x in enumerate(game_data.users):
-        leaderboard += f"{i+1}. <@{x}> - {game_data.users[x] / 60:.2f} hrs\n"
-
-    embed = discord.Embed(color=discord.Color.embed_background(), title=game_data.name)
-    embed.description = (
-        ("**{0}**\n{1}".format(
-            "Playtime leaderboard" if game_data.name != "Genshin Impact" else "Wall of shame",
-            leaderboard
-        ))  # ignore
-    )
-
-    embed.set_footer(text=f"Total playtime: {game_data.overall_time / 60:.2f} hours")
-
-    await ctx.respond(embed=embed)
-
-
-@bot.event
-async def on_presence_update(before: discord.Member, after: discord.Member):
-    if (not before.activity and not after.activity) or before.bot:
+    if not game_data:
+        await ctx.respond(f"Activity `{game}` has no available records.")
         return
 
-    elif not before.activity and after.activity:
-        if after.activity.name == "Spotify": return
-        tracking_list[after.id] = (after.activity.name, datetime.datetime.utcnow())
+    if user:
+        playtime = game_data.users.get(str(user.id))
 
-    elif before.activity and not after.activity:
-        if before.activity.name == "Spotify": return
-        try:
-            await GameData.store_activity_data(after, tracking_list[after.id])
-            tracking_list.pop(after.id)
-        except KeyError:
-            pass
+        if not playtime:
+            content = f"**{user.display_name}** has no playtime in `{game_data.name}`"
+        else:
+            content = f"**{user.display_name}** has **{playtime / 60:.2f} hrs** on record in `{game_data.name}`"
 
-    elif before.activity.name != after.activity.name:
-        if before.activity.name != "Spotify":
-            try:
-                await GameData.store_activity_data(after, tracking_list[after.id])
-            except KeyError:
-                pass
+        await ctx.respond(content)
+        return
 
-        if after.activity.name != "Spotify":
-            tracking_list[after.id] = (after.activity.name, datetime.datetime.utcnow())
-            return
+    leaders = {k: v for k, v in sorted(game_data.users.items(), key=lambda item: item[1], reverse=True)}
+
+    if not leaders:
+        await ctx.respond(f"There is no recorded user playtime in `{game_data.name}`")
+        return
+
+    embed = discord.Embed(
+        title=f"{game_data.name}" if game_data.name != "Genshin Impact" else "Wall of Shame (GI)",
+        color=discord.Color.embed_background()
+    )
+
+    description = ""
+
+    for pos, leader in enumerate(leaders, start=1):
+        description += f'{pos}. <@{leader}> - {leaders[leader] / 60:.2f} hrs.\n'
+
+        if pos > 10:
+            break
+
+    embed.description = description
+
+    await ctx.respond(embed=embed)
 
 
 async def main():
