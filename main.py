@@ -226,6 +226,7 @@ async def playtime_command(
             break
 
     embed.description = description
+    embed.set_footer(text=f"Overall playtime: {game_data.overall_time / 60:.2f}")
 
     await ctx.respond(embed=embed)
 
