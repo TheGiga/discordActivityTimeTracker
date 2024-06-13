@@ -33,7 +33,10 @@ class GameData(Model):
         if timedelta.seconds < 1:
             return
 
-        print(f"Storing {game_name} from {user.name}")
+        print(
+            f"{datetime.datetime.utcnow().strftime('%a %H:%M:%S')} | "
+            f"Storing {game_name} from {user.name} with {timedelta.seconds / 3600:.2f} hrs."
+        )
 
         record, _ = await cls.get_or_create(name=game_name)
 

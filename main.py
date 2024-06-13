@@ -100,6 +100,9 @@ def compare_activity_lists_by_names(x, y) -> (bool, set, set):
 @bot.event
 async def on_presence_update(before: discord.Member, after: discord.Member):
     #print("Presence Update, current tracking list: ", tracking_list)
+
+    #print(after.activities)
+
     if (not before.activity and not after.activity) or before.bot:
         return
 
