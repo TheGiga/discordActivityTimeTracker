@@ -222,6 +222,8 @@ async def fast_move_command(
         print("/fast_move | Someone deleted a channel or something :))))")
         pass
 
+    await ctx.send_followup("✅ Done!")
+
 
 @bot.slash_command(name="playtime")
 async def playtime_command(
