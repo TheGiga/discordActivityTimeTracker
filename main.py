@@ -6,6 +6,7 @@ from discord import ActivityType
 from dotenv import load_dotenv
 from tortoise import connections
 from discord.ext.tasks import loop
+from discord.ext.commands import has_permissions
 
 load_dotenv()
 
@@ -184,6 +185,7 @@ async def channel_name_loop():
     await channel.edit(name=f'casino game hours: {game_data.overall_time / 60:.2f}')
 
 
+@has_permissions(administrator=True)
 @bot.slash_command(name='fast_move')
 async def fast_move_command(
         ctx: discord.ApplicationContext,
@@ -193,11 +195,9 @@ async def fast_move_command(
             discord.VoiceChannel, description="will use voice channel the user or command user is in, if available",
             required=False
         ) = None,
-        number_of_moves: discord.Option(int, required=False) = 10
+        number_of_moves: discord.Option(int, required=False, min_value=1, max_value=20) = 10
 ):
     await ctx.defer(ephemeral=True)
-
-    primary_channel: discord.VoiceChannel
 
     if not user.voice.channel:
         return await ctx.respond("User not in voice channel, unlucko.", ephemeral=True)
@@ -206,7 +206,7 @@ async def fast_move_command(
         primary_channel = user.voice.channel
 
     await ctx.respond(
-        f"☑ Working on it... Moving {user.mention} {number_of_moves} times from and to {primary_channel.mention}",
+        f"� Working on it... Moving {user.mention} {number_of_moves} times from and to {primary_channel.mention}",
         ephemeral=True
     )
 
@@ -219,8 +219,9 @@ async def fast_move_command(
             await asyncio.sleep(config.SLEEP_DURATION_BETWEEN_MOVES)
 
     except discord.HTTPException:
-        print("Someone deleted a channel or something :))))")
+        print("/fast_move | Someone deleted a channel or something :))))")
         pass
+
 
 @bot.slash_command(name="playtime")
 async def playtime_command(
