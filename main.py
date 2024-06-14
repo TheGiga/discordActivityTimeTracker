@@ -184,6 +184,44 @@ async def channel_name_loop():
     await channel.edit(name=f'casino game hours: {game_data.overall_time / 60:.2f}')
 
 
+@bot.slash_command(name='fast_move')
+async def fast_move_command(
+        ctx: discord.ApplicationContext,
+        user: discord.Option(discord.Member),
+        secondary_channel: discord.Option(discord.VoiceChannel),
+        primary_channel: discord.Option(
+            discord.VoiceChannel, description="will use voice channel the user or command user is in, if available",
+            required=False
+        ) = None,
+        number_of_moves: discord.Option(int, required=False) = 10
+):
+    await ctx.defer(ephemeral=True)
+
+    primary_channel: discord.VoiceChannel
+
+    if not user.voice.channel:
+        return await ctx.respond("User not in voice channel, unlucko.", ephemeral=True)
+
+    if not primary_channel:
+        primary_channel = user.voice.channel
+
+    await ctx.respond(
+        f"☑ Working on it... Moving {user.mention} {number_of_moves} times from and to {primary_channel.mention}",
+        ephemeral=True
+    )
+
+    try:
+        for i in range(number_of_moves):
+            await user.move_to(secondary_channel)
+            await asyncio.sleep(config.SLEEP_DURATION_BETWEEN_MOVES)
+
+            await user.move_to(primary_channel)
+            await asyncio.sleep(config.SLEEP_DURATION_BETWEEN_MOVES)
+
+    except discord.HTTPException:
+        print("Someone deleted a channel or something :))))")
+        pass
+
 @bot.slash_command(name="playtime")
 async def playtime_command(
         ctx: discord.ApplicationContext,
