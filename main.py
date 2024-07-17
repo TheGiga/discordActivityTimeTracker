@@ -185,12 +185,33 @@ async def channel_name_loop():
     await channel.edit(name=f'casino game hours: {game_data.overall_time / 60:.2f}')
 
 
-@has_permissions(administrator=True)
-@bot.slash_command(name='fast_move')
+@has_permissions(move_memebers=True)
+@bot.slash_command(name='move_all')
+async def move_all_command(
+        ctx: discord.ApplicationContext,
+        primary_channel: discord.VoiceChannel,
+        secondary_channel: discord.VoiceChannel
+):
+    await ctx.defer(ephemeral=True)
+
+    if len(primary_channel.members) < 1:
+        return await ctx.respond(f":x: There is no one in {primary_channel.mention}.")
+
+    for member in primary_channel.members:
+        try:
+            await member.move_to(secondary_channel)
+        except discord.HTTPException:
+            continue
+
+    await ctx.send_followup("✅ Done!")
+
+
+@has_permissions(move_memebers=True)
+@bot.slash_command(name='move_fast')
 async def fast_move_command(
         ctx: discord.ApplicationContext,
-        user: discord.Option(discord.Member),
-        secondary_channel: discord.Option(discord.VoiceChannel),
+        user: discord.Member,
+        secondary_channel: discord.VoiceChannel,
         primary_channel: discord.Option(
             discord.VoiceChannel, description="will use voice channel the user or command user is in, if available",
             required=False
