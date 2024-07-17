@@ -160,8 +160,8 @@ async def on_presence_update(before: discord.Member, after: discord.Member):
                 stored_user_data.extend(
                     [
                         ActivityData(x) for x in translate_activity_names_list_to_activity_list(
-                            to_add, after_eligible_activities
-                        )
+                        to_add, after_eligible_activities
+                    )
                     ]
                 )
 
@@ -189,13 +189,20 @@ async def channel_name_loop():
 async def on_command_error(ctx, error):
     await ctx.send(content=error)
 
+
 @bot.slash_command(name='move_all')
 async def move_all_command(
         ctx: discord.ApplicationContext,
-        primary_channel: discord.VoiceChannel,
-        secondary_channel: discord.VoiceChannel
+        secondary_channel: discord.VoiceChannel,
+        primary_channel: discord.Option(discord.VoiceChannel) = None
 ):
     await ctx.defer(ephemeral=True)
+
+    if not primary_channel:
+        if getattr(ctx.user, "voice", None):
+            primary_channel = ctx.user.voice.channel
+        else:
+            return await ctx.respond("You have to be in voice channel or specify the `primary_channel` attribute.")
 
     if len(primary_channel.members) < 1:
         return await ctx.respond(f":x: There is no one in {primary_channel.mention}.")
