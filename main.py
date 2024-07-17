@@ -185,7 +185,7 @@ async def channel_name_loop():
     await channel.edit(name=f'casino game hours: {game_data.overall_time / 60:.2f}')
 
 
-@has_permissions(move_memebers=True)
+@has_permissions(move_members=True)
 @bot.slash_command(name='move_all')
 async def move_all_command(
         ctx: discord.ApplicationContext,
@@ -206,7 +206,7 @@ async def move_all_command(
     await ctx.send_followup("✅ Done!")
 
 
-@has_permissions(move_memebers=True)
+@has_permissions(move_members=True)
 @bot.slash_command(name='move_fast')
 async def fast_move_command(
         ctx: discord.ApplicationContext,
