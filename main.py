@@ -1,6 +1,8 @@
 import datetime
 import os
 import asyncio
+
+import aiohttp
 import discord
 from discord import ActivityType
 from dotenv import load_dotenv
@@ -23,6 +25,8 @@ async def game_search(ctx: discord.AutocompleteContext):  # AutoComplete for /em
 
 intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
+
+emoji = discord.SlashCommandGroup(name="emoji")
 
 tracking_list: {int: list['ActivityData']} = {}
 
@@ -253,6 +257,25 @@ async def fast_move_command(
         pass
 
     await ctx.send_followup("✅ Done!")
+
+
+@emoji.command(name='add_from_url')
+async def emoji_add_from_url(
+        ctx: discord.ApplicationContext,
+        name: discord.Option(str, description='name'),
+        url: discord.Option(str, description="url (webp, png, jpg...)")
+):
+    await ctx.defer("Processing...")
+
+    async with aiohttp.ClientSession() as s:
+        async with s.get(url) as r:
+            response_bytes = await r.content.read()
+    try:
+        created_emoji = await ctx.guild.create_custom_emoji(name=name, image=response_bytes)
+    except discord.HTTPException:
+        return await ctx.respond("Failed.")
+
+    await ctx.respond(f"Successfully created emoji {created_emoji}")
 
 
 @bot.slash_command(name="playtime")
