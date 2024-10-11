@@ -265,7 +265,7 @@ async def emoji_add_from_url(
         name: discord.Option(str, description='name'),
         url: discord.Option(str, description="url (webp, png, jpg...)")
 ):
-    await ctx.defer("Processing...")
+    await ctx.defer()
 
     async with aiohttp.ClientSession() as s:
         async with s.get(url) as r:
