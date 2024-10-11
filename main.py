@@ -194,7 +194,7 @@ async def on_command_error(ctx, error):
 async def move_all_command(
         ctx: discord.ApplicationContext,
         secondary_channel: discord.VoiceChannel,
-        primary_channel: discord.Option(discord.VoiceChannel) = None
+        primary_channel: discord.Option(discord.VoiceChannel, required=False) = None
 ):
     await ctx.defer(ephemeral=True)
 
@@ -216,7 +216,7 @@ async def move_all_command(
     await ctx.send_followup("✅ Done!")
 
 
-@bot.slash_command(name='move_fast')
+@bot.slash_command(name='wake_up')
 async def fast_move_command(
         ctx: discord.ApplicationContext,
         user: discord.Member,
@@ -225,7 +225,7 @@ async def fast_move_command(
             discord.VoiceChannel, description="will use voice channel the user or command user is in, if available",
             required=False
         ) = None,
-        number_of_moves: discord.Option(int, required=False, min_value=1, max_value=20) = 10
+        number_of_moves: discord.Option(int, required=False, min_value=1, max_value=10) = 5
 ):
     await ctx.defer(ephemeral=True)
 
