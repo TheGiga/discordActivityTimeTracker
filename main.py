@@ -26,7 +26,7 @@ async def game_search(ctx: discord.AutocompleteContext):  # AutoComplete for /em
 intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
-emoji = discord.SlashCommandGroup(name="emoji")
+emoji_group = bot.create_group(name='emoji')
 
 tracking_list: {int: list['ActivityData']} = {}
 
@@ -259,7 +259,7 @@ async def fast_move_command(
     await ctx.send_followup("✅ Done!")
 
 
-@emoji.command(name='add_from_url')
+@emoji_group.command(name='add_from_url')
 async def emoji_add_from_url(
         ctx: discord.ApplicationContext,
         name: discord.Option(str, description='name'),
