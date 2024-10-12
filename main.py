@@ -272,8 +272,8 @@ async def emoji_add_from_url(
             response_bytes = await r.content.read()
     try:
         created_emoji = await ctx.guild.create_custom_emoji(name=name, image=response_bytes)
-    except (discord.HTTPException, discord.InvalidArgument):
-        return await ctx.respond("Failed.")
+    except (discord.HTTPException, discord.InvalidArgument) as e:
+        return await ctx.respond(f"Failed, `{e}`")
 
     await ctx.respond(f"Successfully created emoji {created_emoji}")
 
