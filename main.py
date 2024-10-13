@@ -8,7 +8,7 @@ from discord import ActivityType
 from dotenv import load_dotenv
 from tortoise import connections
 from discord.ext.tasks import loop
-from discord.ext.commands import has_permissions
+from discord.ext.commands import has_permissions, bot_has_permissions
 
 load_dotenv()
 
@@ -56,8 +56,21 @@ def activity_eligibility_check(activity) -> bool:
     return True
 
 
-def strip_ineligible_activities(activities: tuple) -> list:
-    to_return = []
+def remove_activity_list_duplicates(activities: tuple) -> list[discord.Activity]:
+    names: list[str] = []
+    to_return: list[discord.Activity] = []
+
+    for act in activities:
+        if act.name not in names:
+            to_return.append(act)
+            names.append(act.name)
+
+    return to_return
+
+
+def strip_ineligible_activities(activities: tuple) -> list[discord.Activity]:
+    to_return: list[discord.Activity] = []
+    activities = remove_activity_list_duplicates(activities)
 
     for activity in activities:
         if not activity_eligibility_check(activity):
@@ -163,9 +176,9 @@ async def on_presence_update(before: discord.Member, after: discord.Member):
             if to_add:
                 stored_user_data.extend(
                     [
-                        ActivityData(x) for x in translate_activity_names_list_to_activity_list(
-                        to_add, after_eligible_activities
-                    )
+                        ActivityData(x) for x in
+                        translate_activity_names_list_to_activity_list(to_add, after_eligible_activities)
+                        if x.name not in [y.name for y in stored_user_data]
                     ]
                 )
 
@@ -189,9 +202,23 @@ async def channel_name_loop():
     await channel.edit(name=f'casino game hours: {game_data.overall_time / 60:.2f}')
 
 
+async def send_error_response(ctx, error, custom_message: str = None):
+    try:
+        await ctx.respond(content=error if not custom_message else custom_message)
+    except discord.NotFound:
+        await ctx.send(content=error if not custom_message else custom_message)
+    except discord.HTTPException:
+        pass
+
+
 @bot.event
-async def on_command_error(ctx, error):
-    await ctx.send(content=error)
+async def on_command_error(ctx: discord.ApplicationContext, error):
+    if isinstance(error, discord.ext.commands.MissingPermissions):
+        return await send_error_response(
+            ctx, error, f"Bot lacks permissions: `{error.missing_permissions}`"
+        )
+
+    await send_error_response(ctx, error)
 
 
 @bot.slash_command(name='move_all')
@@ -221,6 +248,7 @@ async def move_all_command(
 
 
 @bot.slash_command(name='wake_up')
+@has_permissions(move_members=True)
 async def fast_move_command(
         ctx: discord.ApplicationContext,
         user: discord.Member,
@@ -252,14 +280,16 @@ async def fast_move_command(
             await user.move_to(primary_channel)
             await asyncio.sleep(config.SLEEP_DURATION_BETWEEN_MOVES)
 
-    except discord.HTTPException:
-        print("/fast_move | Someone deleted a channel or something :))))")
+    except discord.HTTPException as e:
+        print(f"/{ctx.command.qualified_name} | {e}")
         pass
 
     await ctx.send_followup("✅ Done!")
 
 
 @emoji_group.command(name='add_from_url')
+@has_permissions(manage_emojis=True)
+@bot_has_permissions(manage_emojis=True)
 async def emoji_add_from_url(
         ctx: discord.ApplicationContext,
         name: discord.Option(str, description='name'),
@@ -337,7 +367,7 @@ if __name__ == "__main__":
 
     event_loop = asyncio.get_event_loop_policy().get_event_loop()
 
-    if config.ENABLE_CHANNEL_NAME_LOOP:
+    if config.ENABLE_CHANNEL_NAME_LOOP and os.getenv("INDEV") != 1:
         channel_name_loop.start()
 
     try:
