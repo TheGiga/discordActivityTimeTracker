@@ -8,7 +8,8 @@ from discord import ActivityType
 from dotenv import load_dotenv
 from tortoise import connections
 from discord.ext.tasks import loop
-from discord.ext.commands import has_permissions, bot_has_permissions
+from discord.ext.commands import has_permissions, bot_has_permissions, cooldown, BucketType
+from discord.utils import get_or_fetch
 
 load_dotenv()
 
@@ -212,7 +213,7 @@ async def send_error_response(ctx, error, custom_message: str = None):
 
 
 @bot.event
-async def on_command_error(ctx: discord.ApplicationContext, error):
+async def on_application_command_error(ctx: discord.ApplicationContext, error):
     if isinstance(error, discord.ext.commands.MissingPermissions):
         return await send_error_response(
             ctx, error, f"Bot lacks permissions: `{error.missing_permissions}`"
@@ -311,6 +312,7 @@ async def emoji_add_from_url(
     await ctx.respond(f"Successfully created emoji {created_emoji}")
 
 
+@cooldown(1, 10.0, BucketType.user)
 @bot.slash_command(name="playtime")
 async def playtime_command(
         ctx: discord.ApplicationContext,
@@ -349,10 +351,17 @@ async def playtime_command(
 
     description = ""
 
-    for pos, leader in enumerate(leaders, start=1):
-        description += f'{pos}. <@{leader}> - {leaders[leader] / 60:.2f} hrs.\n'
+    leaders_added_count = 0
+    for leader in leaders:
+        try:
+            leader_object: discord.Member = await get_or_fetch(ctx.guild, 'member', leader)
+        except discord.NotFound:
+            continue
 
-        if pos > 10:
+        leaders_added_count += 1
+        description += f'{leaders_added_count}. {leader_object.mention} - {leaders[leader] / 60:.2f} hrs.\n'
+
+        if leaders_added_count >= 10:
             break
 
     embed.description = description
