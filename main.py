@@ -296,10 +296,13 @@ async def emoji_add_from_url(
         url: discord.Option(str, description="url (webp, png, jpg...)")
 ):
     await ctx.defer()
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.get(url) as r:
+                response_bytes = await r.content.read()
+    except aiohttp.InvalidURL:
+        return await ctx.respond(f"Invalid URL! `{url}`")
 
-    async with aiohttp.ClientSession() as s:
-        async with s.get(url) as r:
-            response_bytes = await r.content.read()
     try:
         created_emoji = await ctx.guild.create_custom_emoji(name=name, image=response_bytes)
     except (discord.HTTPException, discord.InvalidArgument) as e:
