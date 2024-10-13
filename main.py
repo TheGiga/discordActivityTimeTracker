@@ -290,7 +290,7 @@ async def fast_move_command(
 @emoji_group.command(name='add_from_url')
 @has_permissions(manage_emojis=True)
 @bot_has_permissions(manage_emojis=True)
-async def emoji_add_from_url(
+async def emoji_add_from_url_command(
         ctx: discord.ApplicationContext,
         name: discord.Option(str, description='name'),
         url: discord.Option(str, description="url (webp, png, jpg...)")
