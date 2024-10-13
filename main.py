@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import os
 import asyncio
@@ -16,7 +17,7 @@ load_dotenv()
 # Any project imports should be used after the load of .env
 
 import config
-from models import GameData
+from models import GameData, ActionLog
 from database import db_init
 
 
@@ -312,7 +313,50 @@ async def emoji_add_from_url_command(
     await ctx.respond(f"Successfully created emoji {created_emoji}")
 
 
-@cooldown(1, 10.0, BucketType.user)
+@cooldown(1, 15.0, BucketType.user)
+@bot.slash_command(name="playtime_log")
+async def playtime_log_command(
+        ctx: discord.ApplicationContext,
+        user: discord.Option(discord.Member),
+        days: discord.Option(
+            int, description="(UTC) data since `TODAY-days` will be shown",
+            min_value=1, default=7, max_value=180
+        ) = 7,
+        game: discord.Option(str, autocomplete=game_search, required=False) = False
+):
+    await ctx.defer()
+
+    data = ActionLog.filter(related_to_user=user.id)
+    since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+
+    if game:
+        data = data.filter(related_to_game=game)
+
+    if days:
+        data = data.filter(action_occurred_at__gte=since)
+
+    data = await data.order_by("-action_occurred_at")
+
+    if not data:
+        return await ctx.respond(f"No data found for **{user}**")
+
+    content = ""
+
+    overall_record_count = len(data)
+    for count, record in enumerate(data, start=1):
+        content += (
+            f"`{record.related_to_game}` <t:{calendar.timegm(record.action_occurred_at.timetuple())}:R> "
+            f"**+{record.minutes_added}m**\n"
+        )
+
+        if count >= 20:
+            content += f"*... and {overall_record_count - count} more records*"
+            break
+
+    await ctx.respond(content=content)
+
+
+@cooldown(1, 15.0, BucketType.user)
 @bot.slash_command(name="playtime")
 async def playtime_command(
         ctx: discord.ApplicationContext,

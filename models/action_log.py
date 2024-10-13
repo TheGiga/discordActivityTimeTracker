@@ -20,7 +20,10 @@ class ActionLog(Model):
     def __repr__(self):
         return (
             f"Logged Action "
-            f"[ User: {self.related_to_user}; Occurred At: {self.action_occurred_at}; Added: {self.minutes_added}m. ]"
+            f"[ "
+            f"User: {self.related_to_user}; Occurred At: {self.action_occurred_at}; Added: {self.minutes_added}m.; "
+            f"Game: {self.related_to_game}."
+            f" ]"
             )
 
     @classmethod
