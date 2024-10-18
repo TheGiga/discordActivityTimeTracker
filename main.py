@@ -45,6 +45,25 @@ class ActivityData:
         return f"ActivityData({self.name=}, {self.start=})"
 
 
+def formatted_str_from_minutes(overall_minutes: int, minimal: bool = False) -> str:
+    """
+    Translates plain minutes into formatted string with hours and minutes, for better understanding.
+    f.e 320 minutes -> 5h 20m
+
+    :param overall_minutes: Minutes
+    :param minimal: If True, return won't include minutes if hours > 0
+    :return: Formatted string
+    """
+    hours, minutes = divmod(overall_minutes, 60)
+
+    if minimal:
+        return f"{hours}h" if hours > 0 else f"{minutes}m"
+
+    to_return = (f"{hours}h " if hours > 0 else "") + (f"{minutes}m " if minutes > 0 else "")
+
+    return to_return[:-1]
+
+
 def activity_eligibility_check(activity) -> bool:
     if activity.name in config.BANNED_ACTIVITY_NAMES:
         #print(f'activity.name in banned names, {activity.name=}')
@@ -201,7 +220,7 @@ async def channel_name_loop():
     if not game_data:
         return
 
-    await channel.edit(name=f'casino game hours: {game_data.overall_time / 60:.2f}')
+    await channel.edit(name=f'casino game hours: {formatted_str_from_minutes(game_data.overall_time)}')
 
 
 async def send_error_response(ctx, error, custom_message: str = None):
@@ -377,8 +396,10 @@ async def playtime_command(
         if not playtime:
             content = f"**{user.display_name}** has no playtime in `{game_data.name}`"
         else:
-            content = f"**{user.display_name}** has **{playtime / 60:.2f} hrs** on record in `{game_data.name}`"
+            content = (f"**{user.display_name}** has **{formatted_str_from_minutes(playtime)}** "
+                       f"on record in `{game_data.name}`")
 
+        await ctx.respond(content)
         await ctx.respond(content)
         return
 
@@ -393,7 +414,7 @@ async def playtime_command(
         color=discord.Color.embed_background()
     )
 
-    description = ""
+    descr = ""
 
     leaders_added_count = 0
     for leader in leaders:
@@ -403,13 +424,14 @@ async def playtime_command(
             continue
 
         leaders_added_count += 1
-        description += f'{leaders_added_count}. {leader_object.mention} - {leaders[leader] / 60:.2f} hrs.\n'
+        descr += (f'{leaders_added_count}. {leader_object.mention} - '
+                  f'{formatted_str_from_minutes(leaders[leader], True)}.\n')
 
         if leaders_added_count >= 10:
             break
 
-    embed.description = description
-    embed.set_footer(text=f"Overall playtime: {game_data.overall_time / 60:.2f} hrs")
+    embed.description = descr
+    embed.set_footer(text=f"Overall playtime: {formatted_str_from_minutes(game_data.overall_time, True)}")
 
     await ctx.respond(embed=embed)
 
@@ -423,7 +445,7 @@ if __name__ == "__main__":
 
     event_loop = asyncio.get_event_loop_policy().get_event_loop()
 
-    if config.ENABLE_CHANNEL_NAME_LOOP and os.getenv("INDEV") != 1:
+    if config.ENABLE_CHANNEL_NAME_LOOP and os.getenv("INDEV") != "1":
         channel_name_loop.start()
 
     try:
