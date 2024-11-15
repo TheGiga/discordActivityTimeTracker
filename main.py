@@ -269,7 +269,6 @@ async def move_all_command(
 
 
 @bot.slash_command(name='wake_up')
-@has_permissions(move_members=True)
 async def wake_up_command(
         ctx: discord.ApplicationContext,
         user: discord.Member,
