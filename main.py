@@ -220,7 +220,7 @@ async def channel_name_loop():
     if not game_data:
         return
 
-    await channel.edit(name=f'casino game hours: {formatted_str_from_minutes(game_data.overall_time)}')
+    await channel.edit(name=f'casino game: {formatted_str_from_minutes(game_data.overall_time)}')
 
 
 async def send_error_response(ctx, error, custom_message: str = None):
@@ -236,7 +236,7 @@ async def send_error_response(ctx, error, custom_message: str = None):
 async def on_application_command_error(ctx: discord.ApplicationContext, error):
     if isinstance(error, discord.ext.commands.MissingPermissions):
         return await send_error_response(
-            ctx, error, f"Bot lacks permissions: `{error.missing_permissions}`"
+            ctx, error, f"Lacking permissions: `{error.missing_permissions}`"
         )
 
     await send_error_response(ctx, error)
@@ -270,7 +270,7 @@ async def move_all_command(
 
 @bot.slash_command(name='wake_up')
 @has_permissions(move_members=True)
-async def fast_move_command(
+async def wake_up_command(
         ctx: discord.ApplicationContext,
         user: discord.Member,
         secondary_channel: discord.VoiceChannel,

@@ -5,6 +5,9 @@ GUILD_ID: int = 996261900067274792
 CHANNEL_ID: int = 1249744391913078909
 
 # do not track activities that have those names
-BANNED_ACTIVITY_NAMES: list[str] = ["Spotify", "Custom Status", "Call of Duty 4 X: Modern Warfare"]
+BANNED_ACTIVITY_NAMES: list[str] = [
+    "Spotify", "Custom Status", "Call of Duty 4 X: Modern Warfare",
+    "PUBG: BATTLEGROUNDS"
+]
 
 SLEEP_DURATION_BETWEEN_MOVES: float = 0.1
