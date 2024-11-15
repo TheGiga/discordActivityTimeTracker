@@ -21,7 +21,7 @@ from models import GameData, ActionLog
 from database import db_init
 
 
-async def game_search(ctx: discord.AutocompleteContext):  # AutoComplete for /emojis search, for better UX.
+async def game_search(ctx: discord.AutocompleteContext):
     return [discord.OptionChoice(x.name) for x in await GameData.all() if ctx.value.lower() in x.name.lower()]
 
 
