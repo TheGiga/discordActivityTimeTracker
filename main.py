@@ -399,7 +399,6 @@ async def playtime_command(
                        f"on record in `{game_data.name}`")
 
         await ctx.respond(content)
-        await ctx.respond(content)
         return
 
     leaders = {k: v for k, v in sorted(game_data.users.items(), key=lambda item: item[1], reverse=True)}
