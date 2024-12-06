@@ -28,8 +28,6 @@ async def game_search(ctx: discord.AutocompleteContext):
 intents = discord.Intents.all()
 bot = discord.Bot(intents=intents)
 
-emoji_group = bot.create_group(name='emoji')
-
 tracking_list: {int: list['ActivityData']} = {}
 
 
@@ -242,6 +240,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     await send_error_response(ctx, error)
 
 
+# utility command, practically unrelated to the bot
 @bot.slash_command(name='move_all')
 async def move_all_command(
         ctx: discord.ApplicationContext,
@@ -268,6 +267,7 @@ async def move_all_command(
     await ctx.send_followup("✅ Done!")
 
 
+# utility command, practically unrelated to the bot
 @bot.slash_command(name='wake_up')
 async def wake_up_command(
         ctx: discord.ApplicationContext,
@@ -305,30 +305,6 @@ async def wake_up_command(
         pass
 
     await ctx.send_followup("✅ Done!")
-
-
-@emoji_group.command(name='add_from_url')
-@has_permissions(manage_emojis=True)
-@bot_has_permissions(manage_emojis=True)
-async def emoji_add_from_url_command(
-        ctx: discord.ApplicationContext,
-        name: discord.Option(str, description='name'),
-        url: discord.Option(str, description="url (webp, png, jpg...)")
-):
-    await ctx.defer()
-    try:
-        async with aiohttp.ClientSession() as s:
-            async with s.get(url) as r:
-                response_bytes = await r.content.read()
-    except aiohttp.InvalidURL:
-        return await ctx.respond(f"Invalid URL! `{url}`")
-
-    try:
-        created_emoji = await ctx.guild.create_custom_emoji(name=name, image=response_bytes)
-    except (discord.HTTPException, discord.InvalidArgument) as e:
-        return await ctx.respond(f"Failed, `{e}`")
-
-    await ctx.respond(f"Successfully created emoji {created_emoji}")
 
 
 @cooldown(1, 15.0, BucketType.user)
